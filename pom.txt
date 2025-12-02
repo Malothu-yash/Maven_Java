@@ -1,0 +1,62 @@
+Minikube (Nginx Service Deployment):
+minikube start
+kubectl create deployment nginx --image=nginx
+kubectl expose deployment nginx --port=80 --target-port=80 --name=nginx-service --type=ClusterIP
+kubectl port-forward svc/nginx-service 8090:80
+# In browser open http://localhost:8090
+# List pods and services in another terminal:
+kubectl get pods -o wide
+kubectl get svc
+
+integrate Jenkins and Minikube:
+
+minikube start --driver=docker
+kubectl get nodes
+kubectl create namespace jenkins
+kubectl create sa jenkins -n jenkins
+
+kubectl create token jenkins -n jenkins --duration=8760h
+
+kubectl create rolebinding jenkins-admin-binding \
+  --clusterrole=admin \
+  --serviceaccount=jenkins:jenkins \
+  --namespace=jenkins
+Jenkins:
+plugins-download
+security-credentials->system
+new cloud->name(click Kubernetes)->save
+Kubernetes cloud details-<kube url->(terminal->kubectl config view)-> url
+Again credentilas-> Add->select jenkins->secret text (paste secret text her by powershall)->ID(secret)->Descripition(secret-tokens)->>ADD
+Kubernetes cloud details->it mark(disable https cer-check)->crendentilas->(DB-secret-tokens)->Kubernetes namespace->jenkins->test
+click->websockets->paste Jenkins URL-(SAVE)
+
+then create a pipeline in Jenkins and paste:
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: maven
+            image: maven:alpine
+            command:
+            - cat
+            tty: true
+        '''
+    }
+  }
+  stages {
+    stage('Run maven') {
+      steps {
+        container('maven') {
+          sh 'mvn -version'
+        }
+      }
+    }
+  }
+}
+then open powershel ->kubectl get pods -n Jenkins --watch
+and save and build(run)
+
